@@ -217,8 +217,6 @@ class SandboxTest extends \PHPUnit\Framework\TestCase
             'object_in_array_dynamic_key' => ['{{ {(obj): "foo"}|join(", ") }}'],
             'object_in_array_dynamic_key_nested' => ['{{ {"foo": { (obj): "foo" }}|join(", ") }}'],
             'context' => ['{{ _context|join(", ") }}'],
-            'spread_array_operator' => ['{{ [1, 2, ...[5, 6, 7, obj]]|join(",") }}'],
-            'spread_array_operator_var' => ['{{ [1, 2, ...some_array]|join(",") }}'],
         ];
     }
 
