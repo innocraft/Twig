@@ -23,11 +23,13 @@ class SandboxExtension extends AbstractExtension
     protected $sandboxedGlobally;
     protected $sandboxed;
     protected $policy;
+    static array $recursionProjection = [];
 
     public function __construct(SecurityPolicyInterface $policy, $sandboxed = false)
     {
         $this->policy = $policy;
         $this->sandboxedGlobally = $sandboxed;
+        static::$recursionProjection = [];
     }
 
     public function getTokenParsers()
@@ -94,6 +96,12 @@ class SandboxExtension extends AbstractExtension
     public function ensureToStringAllowed($obj)
     {
         if (\is_array($obj)) {
+            $hash = \hash('sha256', \serialize($obj));
+            if (\array_key_exists($hash, static::$recursionProjection)) {
+                unset(static::$recursionProjection[$hash]);
+                return $obj;
+            }
+            static::$recursionProjection[$hash] = TRUE;
             $this->ensureToStringAllowedForArray($obj);
             return $obj;
         }
@@ -102,6 +110,7 @@ class SandboxExtension extends AbstractExtension
             $this->policy->checkMethodAllowed($obj, '__toString');
         }
 
+        unset(static::$recursionProjection[$hash]);
         return $obj;
     }
 
