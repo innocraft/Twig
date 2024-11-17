@@ -94,9 +94,7 @@ class SandboxExtension extends AbstractExtension
     public function ensureToStringAllowed($obj)
     {
         if (\is_array($obj)) {
-            foreach ($obj as $v) {
-                $this->ensureToStringAllowed($v);
-            }
+            $this->ensureToStringAllowedForArray($obj);
             return $obj;
         }
 
@@ -110,6 +108,47 @@ class SandboxExtension extends AbstractExtension
     public function getName()
     {
         return 'sandbox';
+    }
+
+    private function ensureToStringAllowedForArray(array $obj): void
+    {
+        foreach ($obj as $k => $v) {
+            if (!$v) {
+                continue;
+            }
+
+            if (!\is_array($v)) {
+                $this->ensureToStringAllowed($v);
+                continue;
+            }
+
+            if (\PHP_VERSION_ID < 70400) {
+                static $cookie;
+
+                if ($v === $cookie ?? $cookie = new \stdClass()) {
+                    continue;
+                }
+
+                $obj[$k] = $cookie;
+                try {
+                    $this->ensureToStringAllowedForArray($v);
+                } finally {
+                    $obj[$k] = $v;
+                }
+
+                continue;
+            }
+
+            if ($r = \ReflectionReference::fromArrayElement($obj, $k)) {
+                if (isset($stack[$r->getId()])) {
+                    continue;
+                }
+
+                $stack[$r->getId()] = true;
+            }
+
+            $this->ensureToStringAllowedForArray($v);
+        }
     }
 }
 
